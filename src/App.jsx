@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 
 function App() {
-  const [toDos, setToDos] = useState([]);
+  const [toDos, setToDos] = useState(() => {
+    const savedTodos = sessionStorage.getItem("todos");
+    return savedTodos ? JSON.parse(savedTodos) : [];
+  })
   const [toDo, setToDo] = useState("");
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
+
+  useEffect(() => {
+    sessionStorage.setItem("todos",JSON.stringify(toDos));
+  }, [toDos])
+  
 
   const addToDo = () => {
     const trimmedToDo = toDo.trim();
@@ -130,7 +138,7 @@ function App() {
       <div className="todos">
         {toDos.length === 0 ? (
           <div className="empty-state">
-            <p>No tasks yet. Add one above!</p>
+            {toDos.length === 0 && <p>No tasks yet. Add one!</p>}
           </div>
         ) : (
           toDos.map((todo) => (
