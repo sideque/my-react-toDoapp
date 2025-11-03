@@ -17,7 +17,6 @@ function App() {
 
   const addToDo = () => {
     const trimmedToDo = toDo.trim();
-    if (trimmedToDo === "") return;
 
     const isDuplicate = toDos.some(
       (item) => item.text.toLowerCase() === trimmedToDo.toLowerCase()
