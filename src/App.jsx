@@ -1,11 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import "./App.css";
 
 function App() {
   const [toDos, setToDos] = useState([]);
   const [toDo, setToDo] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editText, setEditText] = useState("");
 
-  const addToDo = useCallback(() => {
+  const addToDo = () => {
     const trimmedToDo = toDo.trim();
     if (trimmedToDo === "") return;
 
@@ -23,30 +25,78 @@ function App() {
       { id: Date.now(), text: trimmedToDo, status: false },
     ]);
     setToDo("");
-  }, [toDo, toDos]);
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      addToDo();
+      if (editId !== null) {
+        saveEdit();
+      } else {
+        addToDo();
+      }
     }
   };
 
-  const toggleStatus = useCallback((id) => {
+  const toggleStatus = (id) => {
     setToDos((prev) =>
       prev.map((todo) =>
         todo.id === id ? { ...todo, status: !todo.status } : todo
       )
     );
-  }, []);
+  };
 
-  const deleteToDo = useCallback((id) => {
+  const deleteToDo = (id) => {
     const confirmDelete = window.confirm(
-      "Are you sure, you want to delete this..?"
+      "Are you sure, you want to delete this...?"
     );
     if (confirmDelete) {
       setToDos((prev) => prev.filter((todo) => todo.id !== id));
     }
-  }, []);
+  };
+
+  const startEdit = (id, currentText) => {
+    setEditId(id);
+    setEditText(currentText);
+  };
+
+  const cancelEdit = () => {
+    setEditId(null);
+    setEditText("");
+  };
+
+  const saveEdit = () => {
+    const trimmedText = editText.trim();
+
+    if (trimmedText === "") {
+      alert("Task cannot be empty");
+      return;
+    }
+
+    if (/^\d+$/.test(trimmedText)) {
+      alert("Numbers are not allowed");
+      return;
+    }
+
+    const isDuplicate = toDos.some(
+      (item) =>
+        item.text.toLowerCase() === trimmedText.toLowerCase() &&
+        item.id !== editId
+    );
+
+    if (isDuplicate) {
+      alert("You have already added this Task");
+      return;
+    }
+
+    setToDos((prev) =>
+      prev.map((todo) =>
+        todo.id === editId ? { ...todo, text: trimmedText } : todo
+      )
+    );
+
+    setEditId(null);
+    setEditText("");
+  };
 
   return (
     <div className="app">
@@ -57,16 +107,26 @@ function App() {
         <br />
         <h2>Whoop, it's Saturday</h2>
       </div>
+
       <div className="input">
-        <input
+        <input 
           value={toDo}
           onChange={(e) => setToDo(e.target.value)}
           onKeyDown={handleKeyDown}
           type="text"
           placeholder="Add item..."
+          disabled={editId !== null}
         />
-        <i onClick={addToDo} className="fas fa-plus"></i>
+        <i
+          onClick={addToDo}
+          className="fas fa-plus"
+          style={{
+            pointerEvents: editId !== null ? "none" : "auto",
+            opacity: editId !== null ? 0.5 : 1,
+          }}
+        ></i>
       </div>
+
       <div className="todos">
         {toDos.length === 0 ? (
           <div className="empty-state">
@@ -80,20 +140,48 @@ function App() {
                   type="checkbox"
                   checked={todo.status}
                   onChange={() => toggleStatus(todo.id)}
+                  disabled={editId !== null}
                 />
-                <p
-                  style={{
-                    textDecoration: todo.status ? "line-through" : "none",
-                  }}
-                >
-                  {todo.text}
-                </p>
+                {editId === todo.id ? (
+                  <input
+                    type="text"
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      else if (e.key === "Escape") cancelEdit();
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <p
+                    style={{
+                      textDecoration: todo.status ? "line-through" : "none",
+                      cursor: "pointer",
+                    }}
+                    onDoubleClick={() => startEdit(todo.id, todo.text)}
+                    title="Double click to edit"
+                  >
+                    {todo.text}
+                  </p>
+                )}
               </div>
+
               <div className="right">
-                <i
-                  className="fas fa-times"
-                  onClick={() => deleteToDo(todo.id)}
-                ></i>
+                {editId === todo.id ? (
+                  <>
+                    <button onClick={saveEdit} style={{ marginRight: 5 }}>
+                      Save
+                    </button>
+                    <button onClick={cancelEdit}>Cancel</button>
+                  </>
+                ) : (
+                  <i
+                    className="fas fa-times"
+                    onClick={() => deleteToDo(todo.id)}
+                    style={{ cursor: "pointer" }}
+                  ></i>
+                )}
               </div>
             </div>
           ))
